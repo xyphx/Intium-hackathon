@@ -11,11 +11,11 @@ interface LiveMapProps {
   aiResult?: CloudAIResult | null;
 }
 
-// Exact Coordinates
-const DEPT_APPLIED_ELECTRONICS_LON = 76.9051745;
-const DEPT_APPLIED_ELECTRONICS_LAT = 8.5444327;
+// Fallback base coordinates (Department of Applied Electronics, CET)
+const DEFAULT_LAT = 8.5444327;
+const DEFAULT_LON = 76.9051745;
 
-export interface EvacuationRoute {
+export interface DynamicRoute {
   id: string;
   name: string;
   destination: string;
@@ -29,66 +29,66 @@ export interface EvacuationRoute {
   waypoints: { name: string; desc: string; coords: [number, number] }[];
 }
 
-const EVACUATION_ROUTES: EvacuationRoute[] = [
-  {
-    id: 'route-1',
-    name: 'Route 1 (Primary - North)',
-    destination: 'CET Main Open Assembly Ground',
-    color: '#22c55e',
-    glowColor: '#4ade80',
-    distance: '540m',
-    eta: '4.5 mins',
-    safeCoords: [76.90220, 8.54780],
-    safeName: 'Safe Haven Alpha (CET Ground)',
-    description: 'Wide-open main sports ground with emergency medical triage station.',
-    waypoints: [
-      { name: 'Hazard Origin', desc: 'Exit Dept of Applied Electronics via North Bus Bay door', coords: [DEPT_APPLIED_ELECTRONICS_LON, DEPT_APPLIED_ELECTRONICS_LAT] },
-      { name: 'Bus Bay Exit Gate', desc: 'Pass Bus Bay terminal onto northern access road', coords: [76.90508, 8.54495] },
-      { name: 'CET Central Link Road', desc: 'Proceed along Central Ring Road towards West Quad', coords: [76.90445, 8.54565] },
-      { name: 'Electrical & Electronics Quad', desc: 'Green corridor bypassing academic blocks', coords: [76.90360, 8.54650] },
-      { name: 'North Avenue Safety Lane', desc: 'Open safety avenue reaching Outdoor Sports Ground', coords: [76.90280, 8.54720] },
-      { name: 'Safe Haven Alpha', desc: 'CET Main Open Assembly Ground & Medical Relief', coords: [76.90220, 8.54780] }
-    ]
-  },
-  {
-    id: 'route-2',
-    name: 'Route 2 (West Bypass - Fastest)',
-    destination: 'Kulathoor West Bypass Gate',
-    color: '#06b6d4',
-    glowColor: '#38bdf8',
-    distance: '430m',
-    eta: '3.5 mins',
-    safeCoords: [76.90150, 8.54510],
-    safeName: 'Safe Haven Beta (Kulathoor West Gate)',
-    description: 'Direct western arterial exit passage onto Kulathoor bypass road.',
-    waypoints: [
-      { name: 'Hazard Origin', desc: 'Exit Dept of Applied Electronics via West Parking door', coords: [DEPT_APPLIED_ELECTRONICS_LON, DEPT_APPLIED_ELECTRONICS_LAT] },
-      { name: 'West Parking Lane', desc: 'Follow West parking road clear of building structures', coords: [76.90480, 8.54450] },
-      { name: 'Applied Mechanics Link', desc: 'Clear perimeter lane along boundary wall', coords: [76.90380, 8.54460] },
-      { name: 'West Gate Access Way', desc: 'Straight passage towards Kulathoor Road exit', coords: [76.90260, 8.54480] },
-      { name: 'Safe Haven Beta', desc: 'Kulathoor West Bypass Open Assembly Area', coords: [76.90150, 8.54510] }
-    ]
-  },
-  {
-    id: 'route-3',
-    name: 'Route 3 (East Perimeter)',
-    destination: 'Sreekaryam - Akkulam East Gate',
-    color: '#f59e0b',
-    glowColor: '#fbbf24',
-    distance: '470m',
-    eta: '4.0 mins',
-    safeCoords: [76.90800, 8.54530],
-    safeName: 'Safe Haven Gamma (East Gate)',
-    description: 'Eastern campus exit corridor leading to Sreekaryam - Akkulam Main Road.',
-    waypoints: [
-      { name: 'Hazard Origin', desc: 'Exit Dept of Applied Electronics towards East Lane', coords: [DEPT_APPLIED_ELECTRONICS_LON, DEPT_APPLIED_ELECTRONICS_LAT] },
-      { name: 'East Campus Access', desc: 'Proceed along Ambady Nagar connecting lane', coords: [76.90560, 8.54430] },
-      { name: 'Ambady Nagar Avenue', desc: 'Follow open corridor towards eastern perimeter', coords: [76.90650, 8.54450] },
-      { name: 'Sreekaryam Gate Approach', desc: 'Direct access lane to eastern main road', coords: [76.90740, 8.54490] },
-      { name: 'Safe Haven Gamma', desc: 'East Perimeter Safe Assembly Zone', coords: [76.90800, 8.54530] }
-    ]
-  }
-];
+// Function to generate dynamic evacuation routes from any given origin (lon, lat)
+function generateRoutesFromOrigin(originLon: number, originLat: number, nodeName = 'Current Location'): DynamicRoute[] {
+  return [
+    {
+      id: 'route-1',
+      name: 'Route 1 (Primary - North)',
+      destination: 'CET Main Open Assembly Ground',
+      color: '#22c55e',
+      glowColor: '#4ade80',
+      distance: '520m',
+      eta: '4.2 mins',
+      safeCoords: [originLon - 0.0030, originLat + 0.0034],
+      safeName: 'Safe Haven Alpha (North Ground)',
+      description: 'Primary open assembly area equipped with emergency triage & medical relief.',
+      waypoints: [
+        { name: `Hazard Origin (${nodeName})`, desc: 'Immediate evacuation from threatened structure', coords: [originLon, originLat] },
+        { name: 'Checkpoint 1 (Exit Corridor)', desc: 'Move towards clear northern access way', coords: [originLon - 0.0006, originLat + 0.0008] },
+        { name: 'Checkpoint 2 (Central Campus Link)', desc: 'Follow illuminated green corridor bypassing academic blocks', coords: [originLon - 0.0014, originLat + 0.0017] },
+        { name: 'Checkpoint 3 (Safety Lane)', desc: 'Take open avenue towards outer sports ground', coords: [originLon - 0.0022, originLat + 0.0025] },
+        { name: 'Safe Haven Alpha', desc: 'Main Open Assembly Ground & Medical Relief Station', coords: [originLon - 0.0030, originLat + 0.0034] }
+      ]
+    },
+    {
+      id: 'route-2',
+      name: 'Route 2 (West Bypass - Fastest)',
+      destination: 'Kulathoor West Bypass Gate',
+      color: '#06b6d4',
+      glowColor: '#38bdf8',
+      distance: '410m',
+      eta: '3.3 mins',
+      safeCoords: [originLon - 0.0037, originLat + 0.0007],
+      safeName: 'Safe Haven Beta (West Gate)',
+      description: 'Fastest arterial exit passage onto Kulathoor bypass road.',
+      waypoints: [
+        { name: `Hazard Origin (${nodeName})`, desc: 'Exit structure towards West Parking avenue', coords: [originLon, originLat] },
+        { name: 'West Parking Lane', desc: 'Proceed along boundary perimeter road', coords: [originLon - 0.0010, originLat + 0.0002] },
+        { name: 'Bypass Access Way', desc: 'Direct passage towards western perimeter barrier', coords: [originLon - 0.0024, originLat + 0.0004] },
+        { name: 'Safe Haven Beta', desc: 'Kulathoor West Bypass Open Assembly Area', coords: [originLon - 0.0037, originLat + 0.0007] }
+      ]
+    },
+    {
+      id: 'route-3',
+      name: 'Route 3 (East Perimeter)',
+      destination: 'Sreekaryam East Access Gate',
+      color: '#f59e0b',
+      glowColor: '#fbbf24',
+      distance: '460m',
+      eta: '3.8 mins',
+      safeCoords: [originLon + 0.0028, originLat + 0.0009],
+      safeName: 'Safe Haven Gamma (East Gate)',
+      description: 'Eastern campus exit corridor connecting to Sreekaryam - Akkulam Road.',
+      waypoints: [
+        { name: `Hazard Origin (${nodeName})`, desc: 'Exit structure towards East Lane avenue', coords: [originLon, originLat] },
+        { name: 'East Campus Access', desc: 'Proceed along Ambady Nagar connecting corridor', coords: [originLon + 0.0008, originLat + 0.0002] },
+        { name: 'Outer Avenue', desc: 'Follow open corridor towards eastern gate', coords: [originLon + 0.0018, originLat + 0.0005] },
+        { name: 'Safe Haven Gamma', desc: 'East Perimeter Safe Assembly Zone', coords: [originLon + 0.0028, originLat + 0.0009] }
+      ]
+    }
+  ];
+}
 
 export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -100,7 +100,30 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
   const [hudMinimized, setHudMinimized] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // Projected screen coordinates state for 60FPS overlay rendering
+  // 1. Detect critical threats and identify threatened node(s)
+  const criticalAlerts = alerts.filter(
+    a => (a.severity?.toLowerCase() === 'critical' || a.title?.toLowerCase().includes('critical')) && !a.acknowledged
+  );
+  const criticalEvents = events.filter(
+    e => e.risk_level?.toUpperCase() === 'CRITICAL' && e.status !== 'resolved'
+  );
+  const isAiCritical = aiResult?.risk?.level?.toUpperCase() === 'CRITICAL';
+  const hasCriticalThreat = criticalAlerts.length > 0 || criticalEvents.length > 0 || isAiCritical || alerts.length > 0;
+
+  // Determine threat node from active alerts, events, AI, or latest nodes
+  const threatNodeId = criticalAlerts[0]?.node_id || criticalEvents[0]?.node_id || aiResult?.node_id || (nodes[0]?.node_id ?? 'NODE-01');
+  const activeThreatNode = nodes.find(n => n.node_id === threatNodeId && n.location) || 
+                           nodes.find(n => n.location) || 
+                           nodes[0];
+
+  const originLon = activeThreatNode?.location?.longitude ?? DEFAULT_LON;
+  const originLat = activeThreatNode?.location?.latitude ?? DEFAULT_LAT;
+  const originNodeName = activeThreatNode?.name || activeThreatNode?.node_id || 'NODE-01';
+
+  // Dynamically calculate evacuation routes from current threat origin
+  const dynamicRoutes = generateRoutesFromOrigin(originLon, originLat, originNodeName);
+
+  // Projected 2D screen positions state
   const [projectedData, setProjectedData] = useState<{
     origin: { x: number; y: number };
     routes: {
@@ -116,28 +139,15 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     nodes: { id: string; name: string; point: { x: number; y: number }; status: string; isCritical: boolean }[];
   } | null>(null);
 
-  // 1. Detect if critical threat is active
-  const criticalAlerts = alerts.filter(
-    a => (a.severity?.toLowerCase() === 'critical' || a.title?.toLowerCase().includes('critical')) && !a.acknowledged
-  );
-  const criticalEvents = events.filter(
-    e => e.risk_level?.toUpperCase() === 'CRITICAL' && e.status !== 'resolved'
-  );
-  const isAiCritical = aiResult?.risk?.level?.toUpperCase() === 'CRITICAL';
-  const hasCriticalThreat = criticalAlerts.length > 0 || criticalEvents.length > 0 || isAiCritical || alerts.length > 0;
-  const threatenedNodeId = criticalAlerts[0]?.node_id || criticalEvents[0]?.node_id || aiResult?.node_id || 'NODE-01';
-
-  // Sync projected 2D coordinates from 3D map geo coordinates
+  // Project coordinates to screen pixels
   const updateProjectedPositions = useCallback(() => {
     const currentMap = map.current;
     if (!currentMap) return;
 
     try {
-      // Origin projection
-      const originPoint = currentMap.project([DEPT_APPLIED_ELECTRONICS_LON, DEPT_APPLIED_ELECTRONICS_LAT]);
+      const originPoint = currentMap.project([originLon, originLat]);
 
-      // Routes projection
-      const routes = EVACUATION_ROUTES.map(route => {
+      const projectedRoutes = dynamicRoutes.map(route => {
         const safePoint = currentMap.project(route.safeCoords);
         const waypoints = route.waypoints.map(w => ({
           name: w.name,
@@ -161,12 +171,13 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
         };
       });
 
-      // Nodes projection
-      const nodeItems = (nodes.length > 0 ? nodes : [{ node_id: 'NODE-01', name: 'Sensor Node 01', status: 'online' } as Node]).map(n => {
-        const lon = n.location?.longitude ?? DEPT_APPLIED_ELECTRONICS_LON;
-        const lat = n.location?.latitude ?? DEPT_APPLIED_ELECTRONICS_LAT;
+      const projectedNodes = (nodes.length > 0 ? nodes : [
+        { node_id: 'NODE-01', name: 'Sensor Node 01', location: { longitude: originLon, latitude: originLat }, status: 'online' } as Node
+      ]).map(n => {
+        const lon = n.location?.longitude ?? originLon;
+        const lat = n.location?.latitude ?? originLat;
         const point = currentMap.project([lon, lat]);
-        const isCritical = n.node_id === threatenedNodeId && hasCriticalThreat;
+        const isCritical = n.node_id === threatNodeId && hasCriticalThreat;
         return {
           id: n.node_id,
           name: n.name,
@@ -178,21 +189,21 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
 
       setProjectedData({
         origin: originPoint,
-        routes,
-        nodes: nodeItems
+        routes: projectedRoutes,
+        nodes: projectedNodes
       });
     } catch (e) {
       console.error("Error updating projected positions:", e);
     }
-  }, [nodes, threatenedNodeId, hasCriticalThreat]);
+  }, [originLon, originLat, dynamicRoutes, nodes, threatNodeId, hasCriticalThreat]);
 
-  // Center camera bounds covering the evacuation area
+  // Re-center and fit bounds covering the current origin and all routes
   const fitEvacuationBounds = useCallback(() => {
     if (!map.current) return;
     try {
       const bounds = new LngLatBounds();
-      bounds.extend([DEPT_APPLIED_ELECTRONICS_LON, DEPT_APPLIED_ELECTRONICS_LAT]);
-      EVACUATION_ROUTES.forEach(r => {
+      bounds.extend([originLon, originLat]);
+      dynamicRoutes.forEach(r => {
         bounds.extend(r.safeCoords);
         r.waypoints.forEach(w => bounds.extend(w.coords));
       });
@@ -205,7 +216,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     } catch (e) {
       console.error("Error fitting bounds:", e);
     }
-  }, []);
+  }, [originLon, originLat, dynamicRoutes]);
 
   // Initialize Map
   useEffect(() => {
@@ -238,8 +249,8 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     const instance = new Map({
       container: mapContainer.current,
       style: mapStyle as any,
-      center: [76.9048, 8.5460],
-      zoom: 15.6
+      center: [originLon, originLat],
+      zoom: 15.8
     });
 
     instance.addControl(new NavigationControl({ showCompass: true }), 'top-right');
@@ -273,25 +284,24 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     }
   }, [mapLoaded, nodes, events, alerts, aiResult, selectedRouteId, updateProjectedPositions]);
 
-  // Auto-focus escape path on load
+  // Auto-focus escape path on load or threat change
   useEffect(() => {
     if (mapLoaded && hasCriticalThreat && routeVisible) {
       fitEvacuationBounds();
     }
   }, [mapLoaded, hasCriticalThreat, routeVisible, fitEvacuationBounds]);
 
-  const activeRoute = EVACUATION_ROUTES.find(r => r.id === selectedRouteId) || EVACUATION_ROUTES[0];
+  const activeRoute = dynamicRoutes.find(r => r.id === selectedRouteId) || dynamicRoutes[0];
 
   return (
     <div className="relative w-full h-full min-h-[500px] overflow-hidden select-none">
-      {/* Map Container */}
+      {/* Map Canvas Container */}
       <div ref={mapContainer} className="absolute inset-0 w-full h-full bg-gray-950" />
 
-      {/* High-Precision Interactive SVG Evacuation Overlay */}
+      {/* High-Precision Interactive SVG Evacuation Path Overlay */}
       {mapLoaded && projectedData && hasCriticalThreat && routeVisible && (
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
           <defs>
-            {/* Neon Glow Filters */}
             <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feMerge>
@@ -315,12 +325,12 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
             </filter>
           </defs>
 
-          {/* 1. Hazard Exclusion Radius (200m) */}
+          {/* 1. Hazard Exclusion Radius (200m) at Current Location */}
           <circle
             cx={projectedData.origin.x}
             cy={projectedData.origin.y}
             r="80"
-            fill="rgba(239, 68, 68, 0.22)"
+            fill="rgba(239, 68, 68, 0.20)"
             stroke="#ef4444"
             strokeWidth="2.5"
             strokeDasharray="6 4"
@@ -334,14 +344,14 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
             style={{ transformOrigin: `${projectedData.origin.x}px ${projectedData.origin.y}px` }}
           />
 
-          {/* 2. Render All Evacuation Paths */}
+          {/* 2. Render Evacuation Routes */}
           {projectedData.routes.map(r => {
             const isVisible = selectedRouteId === 'all' || selectedRouteId === r.id;
             if (!isVisible) return null;
 
             return (
               <g key={r.id}>
-                {/* Safe Haven Assembly Perimeter */}
+                {/* Safe Haven Perimeter */}
                 <circle
                   cx={r.safePoint.x}
                   cy={r.safePoint.y}
@@ -394,7 +404,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       {/* HTML Interactive Badges Overlay (Anchored to projected coordinates) */}
       {mapLoaded && projectedData && hasCriticalThreat && routeVisible && (
         <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-          {/* A. Hazard Epicenter Badge (Dept of Applied Electronics) */}
+          {/* A. Hazard Epicenter Badge at Current Location */}
           <div
             className="absolute pointer-events-auto cursor-pointer transition-transform hover:scale-110"
             style={{
@@ -406,7 +416,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
           >
             <div className="flex items-center gap-1.5 bg-red-950 text-red-200 border-2 border-red-500 text-[11px] font-black px-3 py-1.5 rounded-full shadow-[0_0_25px_rgba(239,68,68,0.95)] backdrop-blur-md whitespace-nowrap">
               <span className="text-sm animate-bounce">🔥</span>
-              <span>HAZARD EPICENTER: DEPT OF APPLIED ELECTRONICS</span>
+              <span>HAZARD EPICENTER: {originNodeName.toUpperCase()}</span>
             </div>
             <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-red-500 mx-auto -mt-[1px]" />
 
@@ -414,10 +424,10 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-900 border border-red-500 rounded-lg p-2.5 shadow-2xl text-xs text-white z-50">
                 <div className="font-bold text-red-400 border-b border-gray-800 pb-1 mb-1.5 flex items-center gap-1.5">
                   <Flame className="w-3.5 h-3.5 text-red-500" />
-                  <span>Dept of Applied Electronics (CET)</span>
+                  <span>Hazard Location: {originNodeName}</span>
                 </div>
-                <p className="text-[11px] text-red-200 mb-1">Critical fire hazard detected. Immediate evacuation required!</p>
-                <div className="text-[10px] text-gray-400">Exclusion: 200m Perimeter • Follow Routes 1, 2, or 3</div>
+                <p className="text-[11px] text-red-200 mb-1">Critical emergency detected at this location. Evacuate immediately!</p>
+                <div className="text-[10px] text-gray-400">Coordinates: {originLat.toFixed(4)}° N, {originLon.toFixed(4)}° E</div>
               </div>
             )}
           </div>
@@ -461,7 +471,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
                       <Shield className="w-3.5 h-3.5" />
                       <span>{r.safeName}</span>
                     </div>
-                    <p className="text-[11px] text-gray-300 mb-1.5">{EVACUATION_ROUTES.find(x => x.id === r.id)?.description}</p>
+                    <p className="text-[11px] text-gray-300 mb-1.5">{dynamicRoutes.find(x => x.id === r.id)?.description}</p>
                     <div className="text-[10px] text-green-400 font-semibold">STATUS: CLEAR & OPEN TO EVACUEES</div>
                   </div>
                 )}
@@ -493,6 +503,24 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
               </div>
             ));
           })}
+
+          {/* D. Other Online Nodes */}
+          {projectedData.nodes.filter(n => n.id !== threatNodeId).map(n => (
+            <div
+              key={`node-${n.id}`}
+              className="absolute pointer-events-auto cursor-pointer"
+              style={{
+                left: `${n.point.x}px`,
+                top: `${n.point.y}px`,
+                transform: 'translate(-50%, -50%)'
+              }}
+              title={`${n.name} (${n.id}) - Status: ${n.status}`}
+            >
+              <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -538,7 +566,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
                 >
                   All Routes
                 </button>
-                {EVACUATION_ROUTES.map(r => (
+                {dynamicRoutes.map(r => (
                   <button
                     key={r.id}
                     onClick={() => setSelectedRouteId(r.id)}
@@ -552,23 +580,23 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
 
               <div className="mt-2 text-[11px] space-y-1">
                 <div className="flex items-center justify-between text-gray-300">
-                  <span>Hazard Location:</span>
+                  <span>Current Origin:</span>
                   <span className="font-bold text-red-300 font-mono flex items-center gap-1">
                     <Flame className="w-3 h-3 text-red-500" />
-                    Dept of Applied Electronics
+                    {originNodeName}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-gray-300">
                   <span>Safe Destination:</span>
                   <span className="font-bold flex items-center gap-1" style={{ color: selectedRouteId === 'all' ? '#4ade80' : activeRoute.color }}>
                     <Shield className="w-3 h-3" />
-                    {selectedRouteId === 'all' ? '3 Safe Havens Available' : activeRoute.destination}
+                    {selectedRouteId === 'all' ? '3 Safe Havens Active' : activeRoute.destination}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-gray-300">
                   <span>Distance / ETA:</span>
                   <span className="font-mono text-gray-200">
-                    {selectedRouteId === 'all' ? '430m – 540m • 3.5 – 4.5 mins' : `${activeRoute.distance} • ~${activeRoute.eta}`}
+                    {selectedRouteId === 'all' ? '410m – 520m • 3.3 – 4.2 mins' : `${activeRoute.distance} • ~${activeRoute.eta}`}
                   </span>
                 </div>
               </div>
@@ -622,19 +650,19 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-red-600 border border-red-300"></div>
-          <span>Dept of Applied Electronics (Hazard Epicenter)</span>
+          <span>Hazard Epicenter: {originNodeName}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-1.5 bg-green-400 rounded-full"></div>
-          <span>Route 1: CET Main Ground (540m)</span>
+          <span>Route 1: North Safe Ground (520m)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-1.5 bg-cyan-400 rounded-full"></div>
-          <span>Route 2: Kulathoor West Gate (430m)</span>
+          <span>Route 2: West Bypass Gate (410m)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-1.5 bg-amber-400 rounded-full"></div>
-          <span>Route 3: Sreekaryam East Gate (470m)</span>
+          <span>Route 3: East Perimeter Gate (460m)</span>
         </div>
       </div>
     </div>
