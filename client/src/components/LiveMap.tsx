@@ -95,7 +95,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       const endPoint = escapePathCoords[escapePathCoords.length - 1];
       if (!safeMarker.current) {
         const safeEl = document.createElement('div');
-        safeEl.className = 'flex items-center gap-1.5 bg-green-950 text-green-300 border-2 border-green-500 text-xs font-extrabold px-3 py-1.5 rounded-full shadow-2xl animate-bounce';
+        safeEl.className = 'flex items-center gap-1.5 bg-green-950 text-green-300 border-2 border-green-500 text-xs font-extrabold px-3 py-1 rounded-full shadow-lg';
         safeEl.innerHTML = `<span>🛡️ SAFE HAVEN</span>`;
 
         safeMarker.current = new Marker(safeEl)
@@ -275,27 +275,6 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
 
   return (
     <div className="relative w-full h-full">
-      {/* Floating Evacuation HUD Indicator */}
-      {isCritical && (
-        <div className="absolute top-3 left-3 z-10 bg-gray-950/90 border border-red-500/80 text-white px-3.5 py-2 rounded-xl shadow-2xl backdrop-blur-md flex items-center gap-3">
-          <div className="p-1.5 bg-red-950/80 rounded-lg border border-red-700 text-red-400">
-            <ShieldAlert className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black tracking-wider text-red-400 uppercase bg-red-950 px-1.5 py-0.5 rounded border border-red-800">
-                CRITICAL DISASTER ZONE
-              </span>
-              <span className="text-xs text-gray-400 font-mono">Radius ~350m</span>
-            </div>
-            <div className="text-xs font-bold text-green-400 flex items-center gap-1 mt-0.5">
-              <Compass className="w-3.5 h-3.5 text-green-400" />
-              <span>Smart Evacuation Corridor: Follow Green Route to Safe Haven</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Map Container */}
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
     </div>
