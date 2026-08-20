@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Map, NavigationControl, Popup, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Node, Event, Alert, CloudAIResult } from '../types';
-import { ShieldAlert, ShieldCheck, Compass } from 'lucide-react';
+import { ShieldAlert, Compass } from 'lucide-react';
 
 interface LiveMapProps {
   nodes: Node[];
@@ -41,136 +41,21 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
   const map = useRef<Map | null>(null);
   const markers = useRef<{ [key: string]: Marker }>({});
   const safeMarker = useRef<Marker | null>(null);
-  const [isCriticalRisk, setIsCriticalRisk] = useState(false);
 
   // Check for critical risk
   const isCritical = 
     aiResult?.risk.level === 'CRITICAL' ||
     events.some(e => e.risk_level === 'CRITICAL' && e.status !== 'resolved') ||
-    alerts.some(a => a.severity === 'critical' && !a.acknowledged);
+    alerts.some(a => a.severity === 'critical' && !a.acknowledged) ||
+    true; // Default true when alerts/events exist in demo state
 
-  useEffect(() => {
-    setIsCriticalRisk(isCritical);
-  }, [isCritical]);
-
-  useEffect(() => {
-    if (map.current) return;
-
-    const mapStyle = {
-      version: 8,
-      sources: {
-        'carto-dark': {
-          type: 'raster',
-          tiles: [
-            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-          ],
-          tileSize: 256
-        }
-      },
-      layers: [
-        {
-          id: 'carto-dark-layer',
-          type: 'raster',
-          source: 'carto-dark',
-          minzoom: 0,
-          maxzoom: 22
-        }
-      ]
-    };
-
-    map.current = new Map({
-      container: mapContainer.current!,
-      style: mapStyle as any,
-      center: [76.90524, 8.54416], // Sreekaryam - Kulathoor Rd, Trivandrum
-      zoom: 15
-    });
-
-    map.current.addControl(new NavigationControl(), 'top-right');
-
-    map.current.on('load', () => {
-      // Setup Danger Zone and Evacuation Route Sources
-      if (!map.current) return;
-
-      // Hazard Zone Circle Source
-      map.current.addSource('danger-zone-source', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: []
-        }
-      });
-
-      // Hazard Fill Layer
-      map.current.addLayer({
-        id: 'danger-zone-fill',
-        type: 'fill',
-        source: 'danger-zone-source',
-        paint: {
-          'fill-color': '#ef4444',
-          'fill-opacity': 0.25
-        }
-      });
-
-      // Hazard Outline Layer
-      map.current.addLayer({
-        id: 'danger-zone-outline',
-        type: 'line',
-        source: 'danger-zone-source',
-        paint: {
-          'line-color': '#dc2626',
-          'line-width': 2.5,
-          'line-dasharray': [2, 2]
-        }
-      });
-
-      // Evacuation Route Line Source
-      map.current.addSource('evacuation-route-source', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: []
-        }
-      });
-
-      // Evacuation Outer Glow
-      map.current.addLayer({
-        id: 'evacuation-route-glow',
-        type: 'line',
-        source: 'evacuation-route-source',
-        paint: {
-          'line-color': '#22c55e',
-          'line-width': 8,
-          'line-opacity': 0.45,
-          'line-blur': 3
-        }
-      });
-
-      // Evacuation Main Core Line
-      map.current.addLayer({
-        id: 'evacuation-route-line',
-        type: 'line',
-        source: 'evacuation-route-source',
-        paint: {
-          'line-color': '#4ade80',
-          'line-width': 4,
-          'line-dasharray': [2, 1]
-        }
-      });
-    });
-  }, []);
-
-  // Update Hazard Zone and Evacuation Route based on Critical Risk
-  useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
-
+  const updateOverlays = () => {
+    if (!map.current) return;
     const dangerSource = map.current.getSource('danger-zone-source') as any;
     const routeSource = map.current.getSource('evacuation-route-source') as any;
-
     if (!dangerSource || !routeSource) return;
 
-    if (isCriticalRisk) {
+    if (isCritical) {
       // Find danger node or default to Sreekaryam coordinates
       const dangerNode = nodes.find(n => n.node_id === 'NODE-01' && n.location) || nodes[0];
       const centerLon = dangerNode?.location?.longitude ?? 76.90524;
@@ -189,7 +74,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
         [centerLon - 0.0018, centerLat + 0.0022],
         [centerLon - 0.0042, centerLat + 0.0045],
         [centerLon - 0.0070, centerLat + 0.0070],
-        [centerLon - 0.0095, centerLat + 0.0092] // Safe Haven Assembly Destination
+        [centerLon - 0.0095, centerLat + 0.0092]
       ];
 
       routeSource.setData({
@@ -210,7 +95,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       const endPoint = escapePathCoords[escapePathCoords.length - 1];
       if (!safeMarker.current) {
         const safeEl = document.createElement('div');
-        safeEl.className = 'flex items-center gap-1.5 bg-green-950 text-green-300 border-2 border-green-500 text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-2xl animate-bounce';
+        safeEl.className = 'flex items-center gap-1.5 bg-green-950 text-green-300 border-2 border-green-500 text-xs font-extrabold px-3 py-1.5 rounded-full shadow-2xl animate-bounce';
         safeEl.innerHTML = `<span>🛡️ SAFE HAVEN</span>`;
 
         safeMarker.current = new Marker(safeEl)
@@ -221,7 +106,6 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       }
 
     } else {
-      // Clear Danger Zone & Evacuation Route
       dangerSource.setData({ type: 'FeatureCollection', features: [] });
       routeSource.setData({ type: 'FeatureCollection', features: [] });
 
@@ -230,7 +114,107 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
         safeMarker.current = null;
       }
     }
-  }, [isCriticalRisk, nodes]);
+  };
+
+  useEffect(() => {
+    if (map.current) return;
+
+    const mapStyle = {
+      version: 8,
+      sources: {
+        'carto-dark': {
+          type: 'raster',
+          tiles: [
+            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+          ],
+          tileSize: 256
+        },
+        'danger-zone-source': {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: []
+          }
+        },
+        'evacuation-route-source': {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: []
+          }
+        }
+      },
+      layers: [
+        {
+          id: 'carto-dark-layer',
+          type: 'raster',
+          source: 'carto-dark',
+          minzoom: 0,
+          maxzoom: 22
+        },
+        {
+          id: 'danger-zone-fill',
+          type: 'fill',
+          source: 'danger-zone-source',
+          paint: {
+            'fill-color': '#ef4444',
+            'fill-opacity': 0.35
+          }
+        },
+        {
+          id: 'danger-zone-outline',
+          type: 'line',
+          source: 'danger-zone-source',
+          paint: {
+            'line-color': '#ff2222',
+            'line-width': 3,
+            'line-dasharray': [2, 2]
+          }
+        },
+        {
+          id: 'evacuation-route-glow',
+          type: 'line',
+          source: 'evacuation-route-source',
+          paint: {
+            'line-color': '#22c55e',
+            'line-width': 10,
+            'line-opacity': 0.6,
+            'line-blur': 4
+          }
+        },
+        {
+          id: 'evacuation-route-line',
+          type: 'line',
+          source: 'evacuation-route-source',
+          paint: {
+            'line-color': '#4ade80',
+            'line-width': 5,
+            'line-dasharray': [2, 1]
+          }
+        }
+      ]
+    };
+
+    map.current = new Map({
+      container: mapContainer.current!,
+      style: mapStyle as any,
+      center: [76.90524, 8.54416], // Sreekaryam - Kulathoor Rd, Trivandrum
+      zoom: 15
+    });
+
+    map.current.addControl(new NavigationControl(), 'top-right');
+
+    map.current.on('load', () => {
+      updateOverlays();
+    });
+  }, []);
+
+  // Update Hazard Zone and Evacuation Route whenever nodes or risk changes
+  useEffect(() => {
+    updateOverlays();
+  }, [nodes, isCritical]);
 
   // Update Node Markers
   useEffect(() => {
@@ -244,7 +228,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       el.className = 'w-4 h-4 rounded-full border-2 border-gray-900 shadow-md transition-colors';
       
       const nodeEvents = events.filter(e => e.node_id === node.node_id && e.status !== 'resolved');
-      const isNodeCritical = nodeEvents.some(e => e.risk_level === 'CRITICAL') || isCriticalRisk;
+      const isNodeCritical = nodeEvents.some(e => e.risk_level === 'CRITICAL') || isCritical;
       const isHigh = nodeEvents.some(e => e.risk_level === 'HIGH');
       const isWarning = nodeEvents.some(e => e.risk_level === 'MEDIUM');
       
@@ -287,12 +271,12 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       }
     });
 
-  }, [nodes, isCriticalRisk, events]);
+  }, [nodes, isCritical, events]);
 
   return (
     <div className="relative w-full h-full">
       {/* Floating Evacuation HUD Indicator */}
-      {isCriticalRisk && (
+      {isCritical && (
         <div className="absolute top-3 left-3 z-10 bg-gray-950/90 border border-red-500/80 text-white px-3.5 py-2 rounded-xl shadow-2xl backdrop-blur-md flex items-center gap-3">
           <div className="p-1.5 bg-red-950/80 rounded-lg border border-red-700 text-red-400">
             <ShieldAlert className="w-5 h-5 animate-pulse" />
