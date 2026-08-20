@@ -3,16 +3,19 @@ from fastapi import HTTPException
 from app.database import get_db
 from app.schemas.node import NodeCreate, NodeHeartbeat
 
-import requests
+import urllib.request
+import json
 import random
 
 BASE_LAT_LON = None
 
 def get_base_location():
     try:
-        res = requests.get('http://ip-api.com/json', timeout=2).json()
-        if res.get('status') == 'success':
-            return res['lat'], res['lon']
+        req = urllib.request.Request('http://ip-api.com/json', headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=2) as response:
+            res = json.loads(response.read().decode())
+            if res.get('status') == 'success':
+                return res['lat'], res['lon']
     except:
         pass
     return 8.5241, 76.9366
