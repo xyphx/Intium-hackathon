@@ -26,8 +26,7 @@ export default function LiveMap({ nodes, events }: LiveMapProps) {
             'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
             'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
           ],
-          tileSize: 256,
-          attribution: '&copy; OpenStreetMap contributors, &copy; CARTO'
+          tileSize: 256
         }
       },
       layers: [
