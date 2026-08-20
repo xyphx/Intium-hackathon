@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import maplibregl from 'maplibre-gl';
+import { Map, NavigationControl, Popup, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Node, Event } from '../types';
 
@@ -10,20 +10,20 @@ interface LiveMapProps {
 
 export default function LiveMap({ nodes, events }: LiveMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const markers = useRef<{ [key: string]: maplibregl.Marker }>({});
+  const map = useRef<Map | null>(null);
+  const markers = useRef<{ [key: string]: Marker }>({});
 
   useEffect(() => {
     if (map.current) return;
 
-    map.current = new maplibregl.Map({
+    map.current = new Map({
       container: mapContainer.current!,
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [76.9366, 8.5241],
       zoom: 12
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.current.addControl(new NavigationControl(), 'top-right');
   }, []);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function LiveMap({ nodes, events }: LiveMapProps) {
         el.classList.add('bg-green-500'); 
       }
 
-      const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+      const popup = new Popup({ offset: 25 }).setHTML(`
         <div class="text-gray-900 font-sans p-1">
           <h3 class="font-bold border-b pb-1 mb-1">${node.name}</h3>
           <p class="text-sm">${statusHtml}</p>
@@ -75,7 +75,7 @@ export default function LiveMap({ nodes, events }: LiveMapProps) {
         markerEl.className = el.className;
         markers.current[node.node_id].setPopup(popup);
       } else {
-        markers.current[node.node_id] = new maplibregl.Marker(el)
+        markers.current[node.node_id] = new Marker(el)
           .setLngLat([longitude, latitude])
           .setPopup(popup)
           .addTo(map.current!);
