@@ -43,8 +43,8 @@ export default function LiveMap({ nodes, events }: LiveMapProps) {
     map.current = new Map({
       container: mapContainer.current!,
       style: mapStyle as any,
-      center: [76.9366, 8.5241], // Default fallback center
-      zoom: 12
+      center: [76.90524, 8.54416], // Sreekaryam - Kulathoor Rd, Trivandrum
+      zoom: 15
     });
 
     map.current.addControl(new NavigationControl(), 'top-right');

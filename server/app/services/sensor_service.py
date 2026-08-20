@@ -15,8 +15,8 @@ class SensorService:
 
         if not node:
             base_loc = get_base_location()
-            lat = base_loc[0] + random.uniform(-0.45, 0.45)
-            lon = base_loc[1] + random.uniform(-0.45, 0.45)
+            lat = base_loc[0] + random.uniform(-0.008, 0.008)
+            lon = base_loc[1] + random.uniform(-0.008, 0.008)
             now = datetime.now(timezone.utc).isoformat()
             node_doc = {
                 "node_id": data.node_id,
@@ -34,8 +34,8 @@ class SensorService:
             await manager.broadcast("NODE_ONLINE", node_doc)
         elif not node.get("location"):
             base_loc = get_base_location()
-            lat = base_loc[0] + random.uniform(-0.45, 0.45)
-            lon = base_loc[1] + random.uniform(-0.45, 0.45)
+            lat = base_loc[0] + random.uniform(-0.008, 0.008)
+            lon = base_loc[1] + random.uniform(-0.008, 0.008)
             loc = {"latitude": lat, "longitude": lon}
             await db.nodes.update_one({"node_id": data.node_id}, {"$set": {"location": loc}})
             node["location"] = loc

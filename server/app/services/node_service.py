@@ -7,18 +7,9 @@ import urllib.request
 import json
 import random
 
-BASE_LAT_LON = None
-
 def get_base_location():
-    try:
-        req = urllib.request.Request('http://ip-api.com/json', headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=2) as response:
-            res = json.loads(response.read().decode())
-            if res.get('status') == 'success':
-                return res['lat'], res['lon']
-    except:
-        pass
-    return 8.5241, 76.9366
+    # Sreekaryam - Kulathoor Rd, Trivandrum
+    return 8.54416, 76.90524
 
 class NodeService:
     @staticmethod
@@ -47,12 +38,11 @@ class NodeService:
         now = datetime.now(timezone.utc).isoformat()
         node_doc = node_data.model_dump()
         
-        # Auto-assign location if missing (~50km random radius)
+        # Auto-assign location if missing (~1km radius around Sreekaryam - Kulathoor Rd)
         if not node_doc.get("location"):
-            if BASE_LAT_LON is None:
-                BASE_LAT_LON = get_base_location()
-            lat = BASE_LAT_LON[0] + random.uniform(-0.45, 0.45)
-            lon = BASE_LAT_LON[1] + random.uniform(-0.45, 0.45)
+            base_loc = get_base_location()
+            lat = base_loc[0] + random.uniform(-0.008, 0.008)
+            lon = base_loc[1] + random.uniform(-0.008, 0.008)
             node_doc["location"] = {"latitude": lat, "longitude": lon}
 
         node_doc.update({
