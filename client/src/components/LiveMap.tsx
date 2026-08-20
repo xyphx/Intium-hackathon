@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Map, NavigationControl, Popup, Marker } from 'maplibre-gl';
+import { Map, NavigationControl, Popup, Marker, LngLatBounds } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Node, Event, Alert, CloudAIResult } from '../types';
-import { ShieldAlert, Compass } from 'lucide-react';
 
 interface LiveMapProps {
   nodes: Node[];
@@ -12,7 +11,7 @@ interface LiveMapProps {
 }
 
 // Generate circular GeoJSON polygon around a point
-function createGeoJSONCircle(center: [number, number], radiusInKm = 0.35, points = 64) {
+function createGeoJSONCircle(center: [number, number], radiusInKm = 0.25, points = 64) {
   const [longitude, latitude] = center;
   const ret: [number, number][] = [];
   const distanceX = radiusInKm / (111.320 * Math.cos((latitude * Math.PI) / 180));
@@ -47,7 +46,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     aiResult?.risk.level === 'CRITICAL' ||
     events.some(e => e.risk_level === 'CRITICAL' && e.status !== 'resolved') ||
     alerts.some(a => a.severity === 'critical' && !a.acknowledged) ||
-    true; // Default true when alerts/events exist in demo state
+    true; // Always active when demo alerts/events exist
 
   const updateOverlays = () => {
     if (!map.current) return;
@@ -56,25 +55,24 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     if (!dangerSource || !routeSource) return;
 
     if (isCritical) {
-      // Find danger node or default to Sreekaryam coordinates
       const dangerNode = nodes.find(n => n.node_id === 'NODE-01' && n.location) || nodes[0];
       const centerLon = dangerNode?.location?.longitude ?? 76.90524;
       const centerLat = dangerNode?.location?.latitude ?? 8.54416;
 
-      // 1. Set Danger Zone Polygon (Red Circle ~350m radius)
-      const circleFeature = createGeoJSONCircle([centerLon, centerLat], 0.35);
+      // 1. Set Danger Zone Polygon (Red Circle ~250m radius)
+      const circleFeature = createGeoJSONCircle([centerLon, centerLat], 0.25);
       dangerSource.setData({
         type: 'FeatureCollection',
         features: [circleFeature]
       });
 
-      // 2. Set Smart Evacuation Path (Escape Route towards Safe Haven at bypass)
+      // 2. Set Smart Evacuation Path (Escape Route towards Kulathoor bypass)
       const escapePathCoords: [number, number][] = [
         [centerLon, centerLat],
-        [centerLon - 0.0018, centerLat + 0.0022],
-        [centerLon - 0.0042, centerLat + 0.0045],
-        [centerLon - 0.0070, centerLat + 0.0070],
-        [centerLon - 0.0095, centerLat + 0.0092]
+        [centerLon - 0.0011, centerLat + 0.0010],
+        [centerLon - 0.0022, centerLat + 0.0021],
+        [centerLon - 0.0035, centerLat + 0.0034],
+        [centerLon - 0.0048, centerLat + 0.0046] // Safe Haven Assembly Point
       ];
 
       routeSource.setData({
@@ -95,7 +93,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       const endPoint = escapePathCoords[escapePathCoords.length - 1];
       if (!safeMarker.current) {
         const safeEl = document.createElement('div');
-        safeEl.className = 'flex items-center gap-1.5 bg-green-950 text-green-300 border-2 border-green-500 text-xs font-extrabold px-3 py-1 rounded-full shadow-lg';
+        safeEl.className = 'flex items-center gap-1.5 bg-green-950 text-green-300 border-2 border-green-400 text-[11px] font-black px-2.5 py-1 rounded-full shadow-2xl cursor-pointer';
         safeEl.innerHTML = `<span>🛡️ SAFE HAVEN</span>`;
 
         safeMarker.current = new Marker(safeEl)
@@ -159,8 +157,8 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
           type: 'fill',
           source: 'danger-zone-source',
           paint: {
-            'fill-color': '#ef4444',
-            'fill-opacity': 0.35
+            'fill-color': '#ff1111',
+            'fill-opacity': 0.45
           }
         },
         {
@@ -168,8 +166,8 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
           type: 'line',
           source: 'danger-zone-source',
           paint: {
-            'line-color': '#ff2222',
-            'line-width': 3,
+            'line-color': '#ff0000',
+            'line-width': 3.5,
             'line-dasharray': [2, 2]
           }
         },
@@ -179,9 +177,9 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
           source: 'evacuation-route-source',
           paint: {
             'line-color': '#22c55e',
-            'line-width': 10,
-            'line-opacity': 0.6,
-            'line-blur': 4
+            'line-width': 12,
+            'line-opacity': 0.7,
+            'line-blur': 3
           }
         },
         {
@@ -190,7 +188,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
           source: 'evacuation-route-source',
           paint: {
             'line-color': '#4ade80',
-            'line-width': 5,
+            'line-width': 6,
             'line-dasharray': [2, 1]
           }
         }
@@ -200,8 +198,8 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
     map.current = new Map({
       container: mapContainer.current!,
       style: mapStyle as any,
-      center: [76.90524, 8.54416], // Sreekaryam - Kulathoor Rd, Trivandrum
-      zoom: 15
+      center: [76.9030, 8.5465], // Focused directly on the evacuation route corridor
+      zoom: 15.5
     });
 
     map.current.addControl(new NavigationControl(), 'top-right');
@@ -225,7 +223,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
 
       const { longitude, latitude } = node.location;
       const el = document.createElement('div');
-      el.className = 'w-4 h-4 rounded-full border-2 border-gray-900 shadow-md transition-colors';
+      el.className = 'w-5 h-5 rounded-full border-2 border-white shadow-xl transition-colors';
       
       const nodeEvents = events.filter(e => e.node_id === node.node_id && e.status !== 'resolved');
       const isNodeCritical = nodeEvents.some(e => e.risk_level === 'CRITICAL') || isCritical;
@@ -237,7 +235,7 @@ export default function LiveMap({ nodes, events, alerts = [], aiResult }: LiveMa
       if (node.status === 'offline') {
         el.classList.add('bg-gray-500');
       } else if (isNodeCritical) {
-        el.classList.add('bg-red-500', 'animate-pulse');
+        el.classList.add('bg-red-600', 'animate-pulse');
         statusHtml += `<br><span class="text-red-600 font-bold">CRITICAL HAZARD ZONE</span>`;
       } else if (isHigh) {
         el.classList.add('bg-orange-500');
