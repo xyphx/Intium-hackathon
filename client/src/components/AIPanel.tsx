@@ -1,4 +1,4 @@
-import { CloudAIResult } from '../types';
+import type { CloudAIResult } from '../types';
 import { Brain, Cpu, ShieldAlert, Activity, GitCommit } from 'lucide-react';
 
 interface AIPanelProps {

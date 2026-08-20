@@ -1,4 +1,4 @@
-import { Node, SensorReading, Event, Alert } from '../types';
+import type { Node, SensorReading, Event, Alert } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Node } from '../types';
+import type { Node, Event } from '../types';
 
 interface LiveMapProps {
   nodes: Node[];

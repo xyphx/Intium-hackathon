@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { WebSocketMessage, Node, Alert, Event, CloudAIResult } from '../types';
+import type { WebSocketMessage, Node, Alert, Event, CloudAIResult } from '../types';
 import { getNodes, getAlerts, getEvents } from '../api/client';
 import StatCard from '../components/StatCard';
 import AlertPanel from '../components/AlertPanel';
@@ -59,9 +59,23 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
     return <div className="text-center py-20 text-gray-400">Loading dashboard data...</div>;
   }
 
-  const onlineNodes = nodes.filter(n => n.status === 'online').length;
-  const criticalEvents = events.filter(e => e.risk_level === 'CRITICAL').length;
-  const activeAlerts = alerts.filter(a => !a.acknowledged).length;
+  const safeNodes = nodes || [];
+  const safeEvents = events || [];
+  const safeAlerts = alerts || [];
+
+  if (safeNodes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-gray-400 space-y-4">
+        <Radio size={48} className="opacity-20 animate-pulse" />
+        <h2 className="text-xl">Data is unavailable</h2>
+        <p>Waiting for nodes to register and send telemetry data...</p>
+      </div>
+    );
+  }
+
+  const onlineNodes = safeNodes.filter(n => n.status === 'online').length;
+  const criticalEvents = safeEvents.filter(e => e.risk_level === 'CRITICAL').length;
+  const activeAlerts = safeAlerts.filter(a => !a.acknowledged).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -74,14 +88,14 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] relative">
-           <LiveMap nodes={nodes} events={events} />
+           <LiveMap nodes={safeNodes} events={safeEvents} />
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] flex flex-col">
           <div className="p-4 border-b border-gray-800 bg-gray-950/50">
             <h2 className="font-semibold text-white tracking-wide">ACTIVE ALERTS</h2>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <AlertPanel alerts={alerts} />
+            <AlertPanel alerts={safeAlerts} />
           </div>
         </div>
       </div>

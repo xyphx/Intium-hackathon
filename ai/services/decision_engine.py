@@ -23,14 +23,25 @@ def process_telemetry(
             "model_version": raw_data.get("model_version")
         }
         
+    # Make sure we don't drop important fields
+    parsed_data = {
+        **raw_data,
+        "temperature": raw_data.get("temperature"),
+        "smoke": raw_data.get("smoke"),
+        "humidity": raw_data.get("humidity"),
+        "gas": raw_data.get("gas"),
+        "motion": raw_data.get("motion"),
+        "distance": raw_data.get("distance")
+    }
+    
     edge_model = EdgeAI(**edge_ai)
     
     # 2. Trend Analysis
-    trends = analyze_sensor_trends(raw_data, historical_readings)
+    trends = analyze_sensor_trends(parsed_data, historical_readings)
     trend_model = Trend(**trends)
     
     # 3. Anomaly Detection
-    is_anomalous, anom_score, anom_reason = detect_anomalies(raw_data, historical_readings)
+    is_anomalous, anom_score, anom_reason = detect_anomalies(parsed_data, historical_readings)
     anomaly_model = Anomaly(detected=is_anomalous, score=anom_score, reason=anom_reason)
     
     # 4. Sensor Fusion & Multi-node

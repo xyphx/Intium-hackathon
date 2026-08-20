@@ -1,27 +1,47 @@
+import joblib
+import pandas as pd
+import os
+import warnings
+
+# Suppress sklearn warnings about feature names
+warnings.filterwarnings("ignore", category=UserWarning)
+
+# Load the trained Isolation Forest model once
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "weights", "isolation_forest.joblib")
+iso_forest = None
+if os.path.exists(MODEL_PATH):
+    try:
+        iso_forest = joblib.load(MODEL_PATH)
+    except Exception as e:
+        print(f"Error loading anomaly model: {e}")
+
 def detect_anomalies(current_data: dict, historical_readings: list[dict]) -> tuple[bool, float, str]:
     """
-    Detects if the current sensor data is anomalous compared to historical baseline.
+    Detects if the current sensor data is anomalous using a trained Isolation Forest.
     Returns (is_anomalous, score, reason).
     """
-    if not historical_readings:
-        return False, 0.0, None
+    if not iso_forest:
+        return False, 0.0, "Model not trained"
         
-    # Example: Check temperature spikes
-    temp = current_data.get("temperature")
-    if temp is not None:
-        history_temp = [r.get("temperature") for r in historical_readings if r.get("temperature") is not None]
-        if len(history_temp) >= 3:
-            avg_temp = sum(history_temp) / len(history_temp)
-            if temp > avg_temp + 20: # Sudden spike of 20 degrees
-                return True, 0.95, f"Temperature suddenly spiked to {temp}°C (baseline {avg_temp:.1f}°C)"
-                
-    # Example: Check smoke spikes
-    smoke = current_data.get("smoke")
-    if smoke is not None:
-        history_smoke = [r.get("smoke") for r in historical_readings if r.get("smoke") is not None]
-        if len(history_smoke) >= 3:
-            avg_smoke = sum(history_smoke) / len(history_smoke)
-            if smoke > avg_smoke + 30: 
-                return True, 0.88, f"Unusual high smoke concentration detected: {smoke}"
-                
+    # Extract features matching training data: 'temperature', 'smoke', 'humidity', 'gas', 'motion', 'distance'
+    features = {
+        'temperature': current_data.get('temperature', 25.0),
+        'smoke': current_data.get('smoke', 5.0),
+        'humidity': current_data.get('humidity', 50.0),
+        'gas': current_data.get('gas', 0.1),
+        'motion': 1 if current_data.get('motion') else 0,
+        'distance': current_data.get('distance', 300.0)
+    }
+    
+    df = pd.DataFrame([features])
+    
+    # Predict (1 = normal, -1 = anomaly)
+    prediction = iso_forest.predict(df)[0]
+    
+    if prediction == -1:
+        # It's an anomaly!
+        # Determine why by finding which features are highly deviant from a generic baseline
+        reason = "Multivariate anomaly detected by ML algorithm."
+        return True, 0.90, reason
+        
     return False, 0.0, None
