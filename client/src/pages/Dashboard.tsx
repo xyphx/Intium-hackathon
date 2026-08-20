@@ -85,7 +85,7 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] relative">
-           <LiveMap nodes={safeNodes} events={safeEvents} />
+           <LiveMap nodes={safeNodes} events={safeEvents} alerts={safeAlerts} aiResult={latestAI} />
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] flex flex-col">
           <div className="p-4 border-b border-gray-800 bg-gray-950/50">
