@@ -1,94 +1,58 @@
 #include <SPI.h>
 #include <mcp2515.h>
 
-// --- Configuration ---
-#define CS_PIN 10
-MCP2515 mcp2515(CS_PIN);
+// Define the analog pin for the potentiometer
+const int POT_PIN = A0; 
 
-// --- Data Structure ---
-// A union maps the 8 bytes of the floats directly to a byte array
-union CAN_Payload {
-  struct {
-    float temperature;
-    float smoke_level;
-  } sensors;
-  uint8_t bytes[8];
+struct CAN_Payload {
+    int32_t temperature;
+    int32_t smoke;
+    int32_t vibration;
+    int32_t water;
 };
 
-struct can_frame canMsg;
-CAN_Payload payload;
-
-// --- State Machine for Simulation ---
-enum SystemState { NORMAL, SMOKE_DETECTED, FIRE_DETECTED };
-SystemState currentState = NORMAL;
-unsigned long lastStateChange = 0;
+MCP2515 mcp2515(10); // CS pin for MCP2515 on Arduino (Pin 10)
 
 void setup() {
-  Serial.begin(115200);
-  SPI.begin();
-  
-  Serial.println("Starting XyphX Sentinel Node Simulator...");
+    Serial.begin(115200);
 
-  mcp2515.reset();
-  
-  // IMPORTANT: Match this to the crystal on your MCP2515 module!
-  // Most cheap red modules use an 8MHz crystal, not 16MHz.
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); 
-  
-  mcp2515.setNormalMode();
-  
-  // Configure the CAN frame header
-  canMsg.can_id  = 0x036; // Node 2 ID
-  canMsg.can_dlc = 8;     // 8 bytes of data
+    mcp2515.reset();
+    mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
+    mcp2515.setNormalMode();
+
+    Serial.println("Dummy ECU with Potentiometer Initialized.");
 }
 
 void loop() {
-  unsigned long currentMillis = millis();
+    // Read the potentiometer value (0 to 1023)
+    int potValue = analogRead(POT_PIN);
 
-  // Cycle through simulation states every 10 seconds to test your UI
-  if (currentMillis - lastStateChange > 10000) {
-    lastStateChange = currentMillis;
-    currentState = (SystemState)((currentState + 1) % 3);
-  }
+    CAN_Payload packet;
 
-  // Generate fake data based on the current state
-  switch (currentState) {
-    case NORMAL:
-      payload.sensors.temperature = 24.5 + random(-10, 10) / 10.0;
-      payload.sensors.smoke_level = 5.0 + random(-2, 2);
-      Serial.println("State: NORMAL - Transmitting baseline data...");
-      break;
-      
-    case SMOKE_DETECTED:
-      payload.sensors.temperature = 30.2 + random(-10, 10) / 10.0;
-      payload.sensors.smoke_level = 65.5 + random(-5, 5);
-      Serial.println("State: SMOKE - Transmitting elevated smoke data...");
-      break;
-      
-    case FIRE_DETECTED:
-      payload.sensors.temperature = 72.4 + random(-20, 20) / 10.0;
-      payload.sensors.smoke_level = 92.1 + random(-2, 2);
-      Serial.println("State: FIRE - Transmitting critical data...");
-      break;
-  }
+    // Map potentiometer to temperature and smoke
+    packet.temperature = map(potValue, 0, 1023, 2000, 15000);
+    packet.smoke = map(potValue, 0, 1023, 10, 900);
+    packet.vibration = 2;
+    packet.water = 0;
 
-  // Copy the union bytes into the CAN frame
-  for (int i = 0; i < 8; i++) {
-    canMsg.data[i] = payload.bytes[i];
-  }
+    // Print BOTH values to the Serial Monitor
+    Serial.print("Pot: ");
+    Serial.print(potValue);
+    Serial.print(" | Temp: ");
+    Serial.print((float)packet.temperature / 100.0);
+    Serial.print(" °C | Smoke: ");
+    Serial.println(packet.smoke);
 
-  // Send the message over the CAN bus
-  MCP2515::ERROR status = mcp2515.sendMessage(&canMsg);
-  
-  if (status == MCP2515::ERROR_OK) {
-    Serial.print("Sent -> Temp: ");
-    Serial.print(payload.sensors.temperature);
-    Serial.print("C | Smoke: ");
-    Serial.println(payload.sensors.smoke_level);
-  } else {
-    Serial.println("CAN Transmission Failed! Check wiring and termination resistors.");
-  }
+    // Pack into a standard CAN message frame
+    struct can_frame msg;
+    msg.can_id = 0x100;
+    msg.can_dlc = 8;
+    
+    memcpy(msg.data, &packet.temperature, 4);
+    memcpy(msg.data + 4, &packet.smoke, 4);
 
-  // Wait 1 second before sending the next reading
-  delay(1000); 
+    // Send over CAN bus
+    mcp2515.sendMessage(&msg);
+
+    delay(200);
 }
