@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Activity, ShieldAlert, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
+import { Activity, ShieldAlert, Wifi, WifiOff } from 'lucide-react';
 import clsx from 'clsx';
 
 interface HeaderProps {

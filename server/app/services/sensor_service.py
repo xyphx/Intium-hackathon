@@ -8,10 +8,39 @@ class SensorService:
     async def process_sensor_data(data: SensorDataCreate):
         db = get_db()
         
-        # Verify node exists
+        # Verify node exists or auto-register if missing
         node = await db.nodes.find_one({"node_id": data.node_id})
+        from app.services.node_service import get_base_location
+        import random
+
         if not node:
-            raise HTTPException(status_code=404, detail="Node not found")
+            base_loc = get_base_location()
+            lat = base_loc[0] + random.uniform(-0.008, 0.008)
+            lon = base_loc[1] + random.uniform(-0.008, 0.008)
+            now = datetime.now(timezone.utc).isoformat()
+            node_doc = {
+                "node_id": data.node_id,
+                "name": f"Sensor Node {data.node_id}",
+                "capabilities": ["temperature", "smoke"],
+                "location": {"latitude": lat, "longitude": lon},
+                "status": "online",
+                "battery": data.battery,
+                "last_seen": now,
+                "created_at": now
+            }
+            await db.nodes.insert_one(node_doc)
+            node_doc.pop('_id', None)
+            from app.websocket.manager import manager
+            await manager.broadcast("NODE_ONLINE", node_doc)
+        elif not node.get("location"):
+            base_loc = get_base_location()
+            lat = base_loc[0] + random.uniform(-0.008, 0.008)
+            lon = base_loc[1] + random.uniform(-0.008, 0.008)
+            loc = {"latitude": lat, "longitude": lon}
+            await db.nodes.update_one({"node_id": data.node_id}, {"$set": {"location": loc}})
+            node["location"] = loc
+            from app.websocket.manager import manager
+            await manager.broadcast("NODE_STATUS_CHANGED", {"node_id": data.node_id, "location": loc, "status": "online"})
             
         doc = data.model_dump()
         if doc.get("timestamp") is None:

@@ -1,6 +1,8 @@
 import type { Node, SensorReading, Event, Alert } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const protocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'https:' : 'http:';
+const API_BASE = import.meta.env.VITE_API_URL || `${protocol}//${host}:8002/api`;
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, options);

@@ -12,6 +12,7 @@ async def get_nodes():
 
 @router.post("/register")
 async def register_node(node: NodeCreate):
+    print(f"[NODE REGISTRATION] Node: {node.node_id} | Payload: {node.model_dump()}")
     return await NodeService.register_node(node)
 
 @router.get("/{node_id}", response_model=dict)

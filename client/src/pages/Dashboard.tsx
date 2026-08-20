@@ -63,22 +63,19 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
   const safeEvents = events || [];
   const safeAlerts = alerts || [];
 
-  if (safeNodes.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-32 text-gray-400 space-y-4">
-        <Radio size={48} className="opacity-20 animate-pulse" />
-        <h2 className="text-xl">Data is unavailable</h2>
-        <p>Waiting for nodes to register and send telemetry data...</p>
-      </div>
-    );
-  }
-
   const onlineNodes = safeNodes.filter(n => n.status === 'online').length;
   const criticalEvents = safeEvents.filter(e => e.risk_level === 'CRITICAL').length;
   const activeAlerts = safeAlerts.filter(a => !a.acknowledged).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {safeNodes.length === 0 && (
+        <div className="bg-blue-900/50 border border-blue-500/50 text-blue-200 p-4 rounded-xl flex items-center gap-3">
+          <Radio className="animate-pulse" />
+          <p><strong>Waiting for Data:</strong> The map is currently empty. Waiting for hardware nodes to connect and send telemetry...</p>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Nodes" value={nodes.length} icon={<Radio className="text-blue-500" />} />
         <StatCard title="Online Nodes" value={onlineNodes} icon={<Activity className="text-green-500" />} />
@@ -88,7 +85,7 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] relative">
-           <LiveMap nodes={safeNodes} events={safeEvents} />
+           <LiveMap nodes={safeNodes} events={safeEvents} alerts={safeAlerts} aiResult={latestAI} />
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] flex flex-col">
           <div className="p-4 border-b border-gray-800 bg-gray-950/50">

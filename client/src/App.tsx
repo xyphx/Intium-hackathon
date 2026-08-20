@@ -15,9 +15,9 @@ function App() {
       <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
         <Routes>
           <Route path="/" element={<Dashboard wsMessage={lastMessage} />} />
-          <Route path="/nodes" element={<Nodes />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/nodes" element={<Nodes wsMessage={lastMessage} />} />
+          <Route path="/events" element={<Events wsMessage={lastMessage} />} />
+          <Route path="/alerts" element={<Alerts wsMessage={lastMessage} />} />
         </Routes>
       </main>
     </div>

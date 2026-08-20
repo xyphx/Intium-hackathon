@@ -3,6 +3,14 @@ from fastapi import HTTPException
 from app.database import get_db
 from app.schemas.node import NodeCreate, NodeHeartbeat
 
+import urllib.request
+import json
+import random
+
+def get_base_location():
+    # Department of Applied Electronics, Bus Bay, Ambady Nagar, Thiruvananthapuram (CET Campus)
+    return 8.5444327, 76.9051745
+
 class NodeService:
     @staticmethod
     async def get_node(node_id: str):
@@ -20,6 +28,7 @@ class NodeService:
 
     @staticmethod
     async def register_node(node_data: NodeCreate):
+        global BASE_LAT_LON
         db = get_db()
         
         existing_node = await db.nodes.find_one({"node_id": node_data.node_id})
@@ -28,6 +37,14 @@ class NodeService:
         
         now = datetime.now(timezone.utc).isoformat()
         node_doc = node_data.model_dump()
+        
+        # Auto-assign location if missing (~1km radius around Sreekaryam - Kulathoor Rd)
+        if not node_doc.get("location"):
+            base_loc = get_base_location()
+            lat = base_loc[0] + random.uniform(-0.008, 0.008)
+            lon = base_loc[1] + random.uniform(-0.008, 0.008)
+            node_doc["location"] = {"latitude": lat, "longitude": lon}
+
         node_doc.update({
             "status": "online",
             "battery": None,
