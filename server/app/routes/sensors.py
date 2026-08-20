@@ -7,6 +7,7 @@ router = APIRouter(prefix="/api/sensor-data", tags=["Sensors"])
 
 @router.post("")
 async def receive_sensor_data(data: SensorDataCreate):
+    print(f"[SENSOR DATA RECEIVED] Node: {data.node_id} | Payload: {data.model_dump()}")
     return await SensorService.process_sensor_data(data)
 
 @router.get("")
