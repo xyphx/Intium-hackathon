@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Event } from '../types';
+import type { Event } from '../types';
 import { getEvents } from '../api/client';
 import { formatDistanceToNow } from '../utils';
 import clsx from 'clsx';
