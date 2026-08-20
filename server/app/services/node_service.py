@@ -3,6 +3,20 @@ from fastapi import HTTPException
 from app.database import get_db
 from app.schemas.node import NodeCreate, NodeHeartbeat
 
+import requests
+import random
+
+BASE_LAT_LON = None
+
+def get_base_location():
+    try:
+        res = requests.get('http://ip-api.com/json', timeout=2).json()
+        if res.get('status') == 'success':
+            return res['lat'], res['lon']
+    except:
+        pass
+    return 8.5241, 76.9366
+
 class NodeService:
     @staticmethod
     async def get_node(node_id: str):
@@ -20,6 +34,7 @@ class NodeService:
 
     @staticmethod
     async def register_node(node_data: NodeCreate):
+        global BASE_LAT_LON
         db = get_db()
         
         existing_node = await db.nodes.find_one({"node_id": node_data.node_id})
@@ -28,6 +43,15 @@ class NodeService:
         
         now = datetime.now(timezone.utc).isoformat()
         node_doc = node_data.model_dump()
+        
+        # Auto-assign location if missing (~50km random radius)
+        if not node_doc.get("location"):
+            if BASE_LAT_LON is None:
+                BASE_LAT_LON = get_base_location()
+            lat = BASE_LAT_LON[0] + random.uniform(-0.45, 0.45)
+            lon = BASE_LAT_LON[1] + random.uniform(-0.45, 0.45)
+            node_doc["location"] = {"latitude": lat, "longitude": lon}
+
         node_doc.update({
             "status": "online",
             "battery": None,
