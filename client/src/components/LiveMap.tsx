@@ -19,11 +19,29 @@ export default function LiveMap({ nodes, events }: LiveMapProps) {
     map.current = new Map({
       container: mapContainer.current!,
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [76.9366, 8.5241],
+      center: [76.9366, 8.5241], // Default fallback center
       zoom: 12
     });
 
     map.current.addControl(new NavigationControl(), 'top-right');
+
+    // Attempt to get user's current geolocation
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (map.current) {
+            map.current.flyTo({
+              center: [position.coords.longitude, position.coords.latitude],
+              zoom: 14,
+              essential: true
+            });
+          }
+        },
+        (error) => {
+          console.warn('Geolocation failed or permission denied:', error);
+        }
+      );
+    }
   }, []);
 
   useEffect(() => {
