@@ -12,8 +12,8 @@ services:
 
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     container_name: xyphx-backend
     ports:
       - "8001:8000"

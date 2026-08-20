@@ -1,50 +1,56 @@
 import asyncio
 import httpx
-import json
 
-BASE_URL = "http://localhost:8001/api"
+BASE_URL = "http://localhost:8002/api"
 
 async def populate():
     async with httpx.AsyncClient() as client:
         print("Registering nodes...")
-        n1 = await client.post(f"{BASE_URL}/nodes/register", json={
-            "node_id": "NODE-01",
-            "name": "North Gate Sensor",
-            "capabilities": ["temperature", "smoke", "motion"],
-            "location": {"latitude": 8.5241, "longitude": 76.9366}
+        await client.post(f"{BASE_URL}/nodes/register", json={
+            "node_id": "NODE-01", "name": "North Gate Sensor", "capabilities": ["temperature", "smoke"]
         })
-        print(n1.json())
-        
-        n2 = await client.post(f"{BASE_URL}/nodes/register", json={
-            "node_id": "NODE-02",
-            "name": "South Wing Cam",
-            "capabilities": ["temperature", "motion", "camera"],
-            "location": {"latitude": 8.5300, "longitude": 76.9400}
+        await client.post(f"{BASE_URL}/nodes/register", json={
+            "node_id": "NODE-02", "name": "South Wing Cam", "capabilities": ["temperature", "smoke"]
         })
-        print(n2.json())
-        
-        print("Sending normal telemetry (NODE-01)...")
-        r1 = await client.post(f"{BASE_URL}/sensor-data", json={
-            "node_id": "NODE-01",
-            "temperature": 25.5,
-            "smoke": 5.0,
-            "motion": False,
-            "battery": 95
+        await client.post(f"{BASE_URL}/nodes/register", json={
+            "node_id": "NODE-03", "name": "East Corridor", "capabilities": ["temperature"]
         })
-        print(r1.json())
         
-        await asyncio.sleep(2)
-        
-        print("Sending CRITICAL telemetry (NODE-01)...")
-        r2 = await client.post(f"{BASE_URL}/sensor-data", json={
-            "node_id": "NODE-01",
-            "temperature": 85.0,
-            "smoke": 75.0,
-            "motion": True,
-            "battery": 94
+        print("\n--- Scenario A: Normal ---")
+        await client.post(f"{BASE_URL}/sensor-data", json={
+            "node_id": "NODE-01", "temperature": 32, "smoke": 2, "motion": False
         })
-        print(r2.json())
-        print("Done populating test data.")
+        
+        print("\n--- Scenario B: Suspicious ---")
+        await client.post(f"{BASE_URL}/sensor-data", json={
+            "node_id": "NODE-02", "temperature": 61, "smoke": 40,
+            "edge_event": "possible_fire", "edge_confidence": 0.65
+        })
+        
+        print("\n--- Scenario C: Confirmed Fire (Multi-node Fusion) ---")
+        # Node 1 detects high temp, smoke and edge fire
+        await client.post(f"{BASE_URL}/sensor-data", json={
+            "node_id": "NODE-01", "temperature": 78, "smoke": 86,
+            "edge_event": "fire", "edge_confidence": 0.89
+        })
+        # Node 2 confirms smoke
+        await client.post(f"{BASE_URL}/sensor-data", json={
+            "node_id": "NODE-02", "smoke": 80
+        })
+        # Node 3 confirms temp rising
+        await client.post(f"{BASE_URL}/sensor-data", json={
+            "node_id": "NODE-03", "temperature": 65
+        })
+        
+        print("\n--- Scenario D: Sensor Anomaly ---")
+        # Normal temps for Node 3
+        for t in [30, 31, 32, 30]:
+            await client.post(f"{BASE_URL}/sensor-data", json={"node_id": "NODE-03", "temperature": t})
+            await asyncio.sleep(0.1)
+        # Sudden spike
+        await client.post(f"{BASE_URL}/sensor-data", json={"node_id": "NODE-03", "temperature": 95})
+
+        print("\nDone populating test data.")
 
 if __name__ == "__main__":
     asyncio.run(populate())

@@ -32,11 +32,31 @@ class SensorService:
             {"$set": update_data}
         )
         
+        # Fetch historical readings for this node
+        cursor = db.sensor_readings.find({"node_id": data.node_id}, {"_id": 0}).sort("timestamp", -1).limit(10)
+        history = await cursor.to_list(length=10)
+        history.reverse() # Oldest to newest
+        
+        # Fetch recent events
+        event_cursor = db.events.find({}, {"_id": 0}).sort("timestamp", -1).limit(20)
+        recent_events = await event_cursor.to_list(length=20)
+        
+        # Cloud AI Processing
+        from ai.services.decision_engine import process_telemetry
+        cloud_result = process_telemetry(data.node_id, doc, history, recent_events)
+        
+        # Store Cloud AI Result
+        cloud_doc = cloud_result.copy()
+        await db.cloud_ai_results.insert_one(cloud_doc)
+        cloud_result.pop('_id', None)
+        
+        # Pass to RiskService to create event/alert based on Cloud AI
         from app.services.risk_service import RiskService
-        await RiskService.evaluate_reading(doc)
+        await RiskService.evaluate_cloud_result(cloud_result)
         
         from app.websocket.manager import manager
         await manager.broadcast("SENSOR_UPDATE", doc)
+        await manager.broadcast("CLOUD_AI_RESULT", cloud_result)
         
         return {"success": True, "message": "Sensor data processed"}
 

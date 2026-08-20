@@ -5,20 +5,21 @@ import { Node } from '../types';
 
 interface LiveMapProps {
   nodes: Node[];
+  events: Event[];
 }
 
-export default function LiveMap({ nodes }: LiveMapProps) {
+export default function LiveMap({ nodes, events }: LiveMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<{ [key: string]: maplibregl.Marker }>({});
 
   useEffect(() => {
-    if (map.current) return; // Initialize map only once
+    if (map.current) return;
 
     map.current = new maplibregl.Map({
       container: mapContainer.current!,
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [76.9366, 8.5241], // Default center (Trivandrum)
+      center: [76.9366, 8.5241],
       zoom: 12
     });
 
@@ -28,7 +29,6 @@ export default function LiveMap({ nodes }: LiveMapProps) {
   useEffect(() => {
     if (!map.current) return;
 
-    // Update markers
     nodes.forEach(node => {
       if (!node.location) return;
 
@@ -36,17 +36,33 @@ export default function LiveMap({ nodes }: LiveMapProps) {
       const el = document.createElement('div');
       el.className = 'w-4 h-4 rounded-full border-2 border-gray-900 shadow-md transition-colors';
       
+      const nodeEvents = events.filter(e => e.node_id === node.node_id && e.status !== 'resolved');
+      const isCritical = nodeEvents.some(e => e.risk_level === 'CRITICAL');
+      const isHigh = nodeEvents.some(e => e.risk_level === 'HIGH');
+      const isWarning = nodeEvents.some(e => e.risk_level === 'MEDIUM');
+      
+      let statusHtml = `Status: <strong>${node.status.toUpperCase()}</strong>`;
+      
       if (node.status === 'offline') {
         el.classList.add('bg-gray-500');
+      } else if (isCritical) {
+        el.classList.add('bg-red-500');
+        el.classList.add('animate-pulse');
+        statusHtml += `<br><span class="text-red-600 font-bold">CRITICAL RISK</span>`;
+      } else if (isHigh) {
+        el.classList.add('bg-orange-500');
+        statusHtml += `<br><span class="text-orange-500 font-bold">HIGH RISK</span>`;
+      } else if (isWarning) {
+        el.classList.add('bg-yellow-500');
+        statusHtml += `<br><span class="text-yellow-600 font-bold">WARNING</span>`;
       } else {
-        // Here we could base color on node's risk, but we only have general status for now
         el.classList.add('bg-green-500'); 
       }
 
       const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
         <div class="text-gray-900 font-sans p-1">
           <h3 class="font-bold border-b pb-1 mb-1">${node.name}</h3>
-          <p class="text-sm">Status: <strong>${node.status.toUpperCase()}</strong></p>
+          <p class="text-sm">${statusHtml}</p>
           ${node.battery ? `<p class="text-sm">Battery: ${node.battery}%</p>` : ''}
           <p class="text-xs text-gray-500 mt-2">ID: ${node.node_id}</p>
         </div>

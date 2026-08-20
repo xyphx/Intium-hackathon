@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { WebSocketMessage, Node, Alert, Event } from '../types';
+import { WebSocketMessage, Node, Alert, Event, CloudAIResult } from '../types';
 import { getNodes, getAlerts, getEvents } from '../api/client';
 import StatCard from '../components/StatCard';
 import AlertPanel from '../components/AlertPanel';
 import LiveMap from '../components/LiveMap';
+import AIPanel from '../components/AIPanel';
 import { Activity, Radio, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 interface DashboardProps {
@@ -14,6 +15,7 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [latestAI, setLatestAI] = useState<CloudAIResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -48,6 +50,8 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
       setAlerts(prev => [wsMessage.data, ...prev]);
     } else if (wsMessage.type === 'NEW_EVENT') {
       setEvents(prev => [wsMessage.data, ...prev]);
+    } else if (wsMessage.type === 'CLOUD_AI_RESULT') {
+      setLatestAI(wsMessage.data);
     }
   }, [wsMessage]);
 
@@ -69,16 +73,22 @@ export default function Dashboard({ wsMessage }: DashboardProps) {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[600px] relative">
-           <LiveMap nodes={nodes} />
+        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] relative">
+           <LiveMap nodes={nodes} events={events} />
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[600px] flex flex-col">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden h-[500px] flex flex-col">
           <div className="p-4 border-b border-gray-800 bg-gray-950/50">
             <h2 className="font-semibold text-white tracking-wide">ACTIVE ALERTS</h2>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <AlertPanel alerts={alerts} />
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <AIPanel data={latestAI} />
         </div>
       </div>
     </div>

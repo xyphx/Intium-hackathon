@@ -52,6 +52,38 @@ export interface Alert {
   created_at: string;
 }
 
+export interface CloudAIResult {
+  node_id: string;
+  edge_ai: {
+    event?: string;
+    confidence?: number;
+    model_version?: string;
+  };
+  cloud_ai: {
+    classification?: string;
+    confidence?: number;
+  };
+  fusion: {
+    nodes_confirmed: number;
+    evidence_count: number;
+  };
+  trend: {
+    temperature?: string;
+    smoke?: string;
+    battery?: string;
+  };
+  anomaly: {
+    detected: boolean;
+    score: number;
+    reason?: string;
+  };
+  risk: {
+    score: number;
+    level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    evidence: string[];
+  };
+}
+
 export interface WebSocketMessage {
   type: string;
   data: any;

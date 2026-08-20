@@ -42,34 +42,43 @@ class RiskService:
         return risk_score, risk_level, event_types
 
     @staticmethod
-    async def evaluate_reading(sensor_data: dict):
-        risk_score, risk_level, event_types = RiskService.calculate_risk(sensor_data)
+    async def evaluate_cloud_result(cloud_result: dict):
+        risk = cloud_result.get("risk", {})
+        risk_score = risk.get("score", 0)
+        risk_level = risk.get("level", "LOW")
         
-        if not event_types:
-            return None # No significant event
+        # Determine if we should create an event
+        if risk_level in ["LOW", "MEDIUM"] and not cloud_result.get("cloud_ai", {}).get("classification"):
+            return None
             
         db = get_db()
         now = datetime.now(timezone.utc).isoformat()
         
-        # Combine event types for this reading
-        main_event_type = event_types[0] if "fire" not in event_types else "fire"
-        
+        event_type = cloud_result.get("cloud_ai", {}).get("classification")
+        if not event_type or event_type == "unknown":
+            if risk_level == "CRITICAL":
+                event_type = "critical_anomaly"
+            elif risk_level == "HIGH":
+                event_type = "high_risk_anomaly"
+            else:
+                event_type = "suspicious_activity"
+                
         event_doc = {
             "event_id": f"EVT-{uuid.uuid4().hex[:8].upper()}",
-            "node_id": sensor_data["node_id"],
-            "event_type": main_event_type,
-            "confidence": 0.9 if risk_score > 80 else 0.7,
+            "node_id": cloud_result["node_id"],
+            "event_type": event_type,
+            "confidence": cloud_result.get("cloud_ai", {}).get("confidence", 0.0),
             "risk_score": risk_score,
             "risk_level": risk_level,
             "status": "detected",
-            "confirmed": False,
+            "confirmed": cloud_result.get("fusion", {}).get("nodes_confirmed", 0) > 0,
+            "evidence": risk.get("evidence", []),
             "timestamp": now
         }
         
         await db.events.insert_one(event_doc)
         event_doc.pop('_id', None)
         
-        # Phase 6 Alert generation hook here if critical
         from app.services.alert_service import AlertService
         if risk_level == "CRITICAL":
             await AlertService.create_alert(event_doc)
