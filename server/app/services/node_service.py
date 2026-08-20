@@ -8,8 +8,8 @@ import json
 import random
 
 def get_base_location():
-    # Sreekaryam - Kulathoor Rd, Trivandrum
-    return 8.54416, 76.90524
+    # Department of Applied Electronics, Bus Bay, Ambady Nagar, Thiruvananthapuram (CET Campus)
+    return 8.5444327, 76.9051745
 
 class NodeService:
     @staticmethod
